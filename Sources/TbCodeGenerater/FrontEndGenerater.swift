@@ -41,17 +41,35 @@ fileprivate extension OptionDefinition {
             case .\(name):
                 return ["\(type.commandLineFlag)"]
             """)
+        case .joined:
+            contents.append("""
+            case .\(name)(let arg):
+                return ["\(type.commandLineFlag)\\(arg)"]
+            """)
         case .separate: fallthrough
-        case .joined: fallthrough
         case .joinedOrSeparate:
             contents.append("""
             case .\(name)(let arg):
                 return ["\(type.commandLineFlag)", arg]
             """)
-        case .multiArg://(_, _, let count):
+            /// args
+        case .commaJoined:
+            contents.append("""
+            case .\(name)(let args):
+                let commaArg = args.joined(separator: ",")
+                return ["\(type.commandLineFlag)=\\(commaArg)"]
+            """)
+            /// args
+        case .multiArg:
             contents.append("""
             case .\(name)(let args):
                 return ["\(type.commandLineFlag)"] + args
+            """)
+            /// arg1 2
+        case .joinedAndSeparate:
+            contents.append("""
+            case .\(name)(let arg1, let arg2):
+                return ["\(type.commandLineFlag)\\(arg1)", arg2]
             """)
         }
         return contents.joined(separator: "\n")
@@ -69,18 +87,25 @@ fileprivate extension OptionDefinition {
         let flags = flags.union(letBlockFlags)
         if !flags.isEmpty {
             contents.append("""
-            /// flags: \(flags)
+            /// Flags: \(flags.sorted().joined(separator: ", "))
             """)
         }
         
         if let metaVarName {
             contents.append("""
-            /// meta var name: \(metaVarName)
+            /// Meta var name: \(metaVarName)
             """)
         }
+        
         if let aliasOf {
             contents.append("""
-            /// alias of: \(aliasOf)
+            /// Alias of: \(aliasOf)
+            """)
+        }
+        
+        if !otherOptions.isEmpty {
+            contents.append("""
+            /// Other options: \(otherOptions.sorted().joined(separator: ", "))
             """)
         }
         
@@ -89,15 +114,20 @@ fileprivate extension OptionDefinition {
             contents.append("""
             case \(name)
             """)
-        case .separate: fallthrough
         case .joined: fallthrough
+        case .separate: fallthrough
         case .joinedOrSeparate:
             contents.append("""
             case \(name)(arg: String)
             """)
-        case .multiArg://(_, _, let count):
+        case .commaJoined: fallthrough
+        case .multiArg:
             contents.append("""
             case \(name)(args: [String])
+            """)
+        case .joinedAndSeparate:
+            contents.append("""
+            case \(name)(arg1: String, arg2: String)
             """)
         }
         
