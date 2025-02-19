@@ -1,10 +1,13 @@
 import Foundation
 
 struct FrontEndGenerater {
-    public static func generate(content: String) throws -> String {
+    public static func generate(
+        name: String,
+        content: String
+    ) throws -> String {
         let options = try TableGenParser.parse(content)
         return """
-        public enum SwiftFrontEndOptions {
+        public enum \(name) {
         \(generateCase(options).indent())
         
         \(generateFlags(options).indent())
@@ -19,14 +22,10 @@ struct FrontEndGenerater {
     private static func generateFlags(_ options: [OptionDefinition]) -> String {
         let flags = options.map(\.flagDefinition).joined(separator: "\n")
         return """
-        private var _flags: [String] {
+        private var flags: [String] {
             switch self {
         \(flags.indent())
             }
-        }
-        
-        public var flags: [String] {
-            ["-Xfrontend"] + _flags
         }
         """
     }
@@ -108,6 +107,13 @@ fileprivate extension OptionDefinition {
             /// Other options: \(otherOptions.sorted().joined(separator: ", "))
             """)
         }
+        
+        if !otherGroup.isEmpty {
+            contents.append("""
+            /// Other groups: \(otherGroup.sorted().joined(separator: ", "))
+            """)
+        }
+        let name = SwiftKeyword(rawValue: self.name)?.name ?? self.name
         
         switch type {
         case .flag:

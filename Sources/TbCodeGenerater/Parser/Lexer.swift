@@ -56,9 +56,9 @@ class Lexer {
         case "d" where matchKeyword("def"):
             return .def
         case "l" where matchKeyword("let"):
-            return .let_
+            return .let
         case "i" where matchKeyword("in"):
-            return .in_
+            return .in
         case "c" where matchKeyword("class"):
             return .class
         case "\"":

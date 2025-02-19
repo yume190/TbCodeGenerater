@@ -1,23 +1,6 @@
 import Foundation
 
-//class MetaVarName<string name> { string MetaVarName = name; }
-//class Values<string value> { string Values = value; }
-//class ValuesCode<code valuecode> { code ValuesCode = valuecode; }
-
 typealias FlagType = String
-
-struct OptionGroup: Equatable {
-    let name: String
-    let helpText: String?
-//    let parent: OptionGroup?
-    let flags: [OptionFlag]
-    let visibility: [OptionVisibility]
-}
-
-struct HelpTextVariant: Equatable {
-    let visibilities: [OptionVisibility]
-    let text: String
-}
 
 // MARK: - Option Definition
 
@@ -32,6 +15,7 @@ struct OptionDefinition: Equatable {
     let declaredInLetBlock: Bool
     let letBlockFlags: Set<FlagType>
     let otherOptions: [String]
+    let otherGroup: [String]
     
     var allFlags: Set<FlagType> {
         flags.union(letBlockFlags)
@@ -84,10 +68,14 @@ class Parser {
         advance()
     }
     
-    private func skipUtil(_ expected: Token) {
+    @discardableResult
+    private func skipUtil(_ expected: Token) -> String {
+        var text = ""
         while currentToken != expected && currentToken != .eof {
+            text += currentToken.text
             advance()
         }
+        return text
     }
     
     func parseOptionDefinitions() throws -> [OptionDefinition] {
@@ -95,7 +83,7 @@ class Parser {
         
         while currentToken != .eof {
             switch currentToken {
-            case .let_:
+            case .let:
                 let blockDefinitions = try parseLetBlock()
                 definitions += blockDefinitions
             case .def:
@@ -117,7 +105,7 @@ class Parser {
         var definitions: [OptionDefinition] = []
         
         // let 'Flags'
-        try match(.let_)
+        try match(.let)
         _ = try parseIdentifier()
 
         try match(.equals)
@@ -125,7 +113,7 @@ class Parser {
         let origin = context.currentLetBlockFlags
         context.currentLetBlockFlags = flags
         
-        try match(.in_)
+        try match(.in)
         try match(.leftBrace)
         
         context.inLetBlock = true
@@ -137,11 +125,10 @@ class Parser {
                     definitions.append(definition)
                 }
             }
-            if case .let_ = currentToken {
+            if case .let = currentToken {
                 let blockDefinitions = try parseLetBlock()
                 definitions += blockDefinitions
             }
-//            advance()
         }
         
         context.inLetBlock = false
@@ -224,22 +211,19 @@ class Parser {
         return type
     }
     
+    /// skip class define
+    ///
     /// class DebugCrashOpt : Group<debug_crash_Group>;
     /// class OptionKind<string name, int precedence = 0, bit sentinel = false> {}
-    /// skip class define
     private func parseClass() {
         try? match(.class)
         _ = try? parseIdentifier()
         if case .colon = currentToken {
             skipUtil(.semicolon)
-//            while currentToken != .semicolon && currentToken != .eof {
-//                advance()
-//            }
+            matchIf(.semicolon)
         } else {
             skipUtil(.rightBracket)
-//            while currentToken != .rightBracket && currentToken != .eof {
-//                advance()
-//            }
+            matchIf(.rightBracket)
         }
     }
     
@@ -282,6 +266,7 @@ class Parser {
         let type = try parseOptionType(typeString)
         var helpText = ""
         var otherOptions: [String] = []
+        var otherGroup: [String] = []
         var metaVarName: String? = nil
         var aliasOf: String? = nil
         var flags: Set<FlagType> = []
@@ -309,6 +294,8 @@ class Parser {
                     case "Flags":
                         flags = try parseFlags()
                     default:
+                        let group = "\(attr)<\(skipUtil(.rightAngle))>"
+                        otherGroup.append(group)
                         break
                     }
                     
@@ -323,10 +310,7 @@ class Parser {
         }
         
         try match(.semicolon)
-//        print("Parse a def \(name)")
-        
-//        counter++
-//        print("def \(name)")
+
         return OptionDefinition(
             name: name,
             type: type,
@@ -336,12 +320,11 @@ class Parser {
             flags: flags,
             declaredInLetBlock: context.inLetBlock,
             letBlockFlags: context.currentLetBlockFlags,
-            otherOptions: otherOptions
+            otherOptions: otherOptions,
+            otherGroup: otherGroup
         )
     }
 }
-
-// MARK: - Usage Example
 
 class TableGenParser {
     static func parse(_ input: String) throws -> [OptionDefinition] {

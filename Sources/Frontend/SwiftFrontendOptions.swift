@@ -1,4 +1,4 @@
-public enum SwiftFrontEndOptions {
+public enum SwiftFrontendOptions {
     /// Specify source inputs in a file rather than on the command line
     /// Flags: ArgumentIsFileList, FrontendOption, NoDriverOption
     case filelist(arg: String)
@@ -1265,7 +1265,7 @@ public enum SwiftFrontEndOptions {
     /// Flags: FrontendOption, HelpHidden, ModuleInterfaceOptionIgnorable, NoDriverOption
     case disable_experimental_parser_round_trip
 
-    private var _flags: [String] {
+    private var flags: [String] {
         switch self {
         case .filelist(let arg):
             return ["-filelist", arg]
@@ -2072,8 +2072,5 @@ public enum SwiftFrontEndOptions {
         case .disable_experimental_parser_round_trip:
             return ["-disable-experimental-parser-round-trip"]
         }
-    }
-    public var flags: [String] {
-        ["-Xfrontend"] + _flags
     }
 }
