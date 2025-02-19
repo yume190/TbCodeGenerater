@@ -78,7 +78,7 @@ class Parser {
         return text
     }
     
-    func parseOptionDefinitions() throws -> [OptionDefinition] {
+    public func parseOptionDefinitions() throws -> [OptionDefinition] {
         var definitions: [OptionDefinition] = []
         
         while currentToken != .eof {

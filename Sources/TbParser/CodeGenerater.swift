@@ -1,6 +1,6 @@
 import Foundation
 
-struct FrontEndGenerater {
+public struct CodeGenerater {
     public static func generate(
         name: String,
         content: String
@@ -22,7 +22,7 @@ struct FrontEndGenerater {
     private static func generateFlags(_ options: [OptionDefinition]) -> String {
         let flags = options.map(\.flagDefinition).joined(separator: "\n")
         return """
-        private var flags: [String] {
+        public var flags: [String] {
             switch self {
         \(flags.indent())
             }
